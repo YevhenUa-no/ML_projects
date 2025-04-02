@@ -8,6 +8,58 @@ import contextlib
 
 st.title("Iris Flower Classification with Decision Tree")
 
+# Theoretical Explanation
+st.header("Decision Tree Theory")
+st.markdown("""
+A Decision Tree is a supervised machine learning algorithm that builds a tree-like model to make decisions. It works by recursively partitioning the data based on feature values. Each node in the tree represents a decision based on a feature, and each branch represents a possible outcome.
+
+**Key Concepts:**
+
+* **Nodes:** Represent decisions based on feature values.
+* **Branches:** Represent possible outcomes of the decisions.
+* **Leaves:** Represent the final predicted class or value.
+* **Root Node:** The topmost node, representing the best feature to split the data.
+* **Internal Nodes:** Nodes between the root and leaves, representing intermediate decisions.
+
+**Splitting Criteria:**
+
+Decision Trees use splitting criteria to determine the best feature to split the data at each node. Common criteria include:
+
+* **Gini Impurity:** Measures the impurity of a set of labels. A Gini score of 0 indicates perfect purity (all labels are the same). The formula for Gini Impurity is:
+
+    $$Gini = 1 - \sum_{i=1}^{n} P_i^2$$
+
+    Where $P_i$ is the probability of an object being classified to a particular class.
+
+* **Entropy:** Measures the disorder or randomness in a set of labels. Entropy of 0 indicates a perfectly homogeneous set. The formula for Entropy is:
+
+    $$Entropy = - \sum_{i=1}^{n} P_i \log_2(P_i)$$
+
+    Where $P_i$ is the probability of an object being classified to a particular class.
+
+* **Information Gain:** Measures the reduction in entropy after splitting the data. The feature with the highest information gain is chosen for splitting.
+
+**How Decision Trees Work:**
+
+1.  **Start at the root node:** Select the best feature to split the data based on the splitting criteria.
+2.  **Create branches:** Divide the data into subsets based on the feature values.
+3.  **Recursively repeat:** Apply the same process to each subset until a stopping condition is met (e.g., maximum depth, minimum samples per leaf).
+4.  **Assign labels to leaves:** Assign the majority class or average value to each leaf node.
+
+**Advantages:**
+
+* Easy to understand and interpret.
+* Can handle both categorical and numerical data.
+* Requires minimal data preprocessing.
+
+**Disadvantages:**
+
+* Prone to overfitting, especially with deep trees.
+* Can be sensitive to small variations in the data.
+* Can create complex trees that are difficult to interpret.
+
+""")
+
 # Objective and Steps
 st.header("Objective")
 st.write("Classify flowers based on sepal and petal dimensions using a Decision Tree.")
