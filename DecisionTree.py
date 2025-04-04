@@ -8,8 +8,6 @@ import contextlib
 
 st.title("Iris Flower Classification with Decision Tree")
 
-# Add GIF at the top
-st.image("ML_DecTree.gif")
 
 # Theoretical Explanation
 st.header("Decision Tree Theory")
