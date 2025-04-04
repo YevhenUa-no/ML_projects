@@ -8,6 +8,9 @@ import contextlib
 
 st.title("Iris Flower Classification with Decision Tree")
 
+# Add GIF at the top
+st.image("ML_DecTree.gif")
+
 # Theoretical Explanation
 st.header("Decision Tree Theory")
 st.markdown("""
@@ -40,9 +43,13 @@ Decision Trees use splitting criteria to determine the best feature to split the
 * **Information Gain:** Measures the reduction in entropy after splitting the data. The feature with the highest information gain is chosen for splitting.
 
 **How Decision Trees Work:**
-# Add GIF
+
+""")
+
+# Add GIF after "How Decision Trees Work:"
 st.image("ML_DecTree.gif")
 
+st.markdown("""
 1.  **Start at the root node:** Select the best feature to split the data based on the splitting criteria.
 2.  **Create branches:** Divide the data into subsets based on the feature values.
 3.  **Recursively repeat:** Apply the same process to each subset until a stopping condition is met (e.g., maximum depth, minimum samples per leaf).
