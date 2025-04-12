@@ -6,7 +6,7 @@ from sklearn.datasets import load_iris
 import io
 import contextlib
 
-st.title("Iris Flower Classification with Decision Tree - Loha ")
+st.title("Iris Flower Classification with Decision Tree")
 
 
 # Theoretical Explanation
