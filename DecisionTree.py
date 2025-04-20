@@ -1,145 +1,107 @@
 import streamlit as st
-import numpy as np
-import matplotlib.pyplot as plt
+import pandas as pd
 from sklearn.tree import DecisionTreeClassifier, plot_tree
-from sklearn.datasets import load_iris
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score
+import matplotlib.pyplot as plt
 import io
 import contextlib
 
-st.title("Iris Flower Classification with Decision Tree")
+st.title("Decision Tree Classifier")
 
+st.sidebar.header("Data Source")
+data_source = st.sidebar.radio("Select Data Source:", ["Upload CSV File", "Use Iris Dataset"])
 
-# Theoretical Explanation
-st.header("Decision Tree Theory")
-st.markdown("""
-A Decision Tree is a supervised machine learning algorithm that builds a tree-like model to make decisions. It works by recursively partitioning the data based on feature values. Each node in the tree represents a decision based on a feature, and each branch represents a possible outcome.
+if data_source == "Upload CSV File":
+    uploaded_file = st.sidebar.file_uploader("Upload a CSV file", type=["csv"])
+    if uploaded_file is not None:
+        try:
+            df = pd.read_csv(uploaded_file)
+            st.subheader("Uploaded Data:")
+            st.dataframe(df.head())
 
-**Key Concepts:**
+            # Allow user to select target and feature columns
+            st.sidebar.header("Column Selection")
+            all_columns = df.columns.tolist()
+            target_column = st.sidebar.selectbox("Select Target Column:", all_columns)
+            feature_columns = st.sidebar.multiselect("Select Feature Columns:", all_columns, default=[col for col in all_columns if col != target_column])
 
-* **Nodes:** Represent decisions based on feature values.
-* **Branches:** Represent possible outcomes of the decisions.
-* **Leaves:** Represent the final predicted class or value.
-* **Root Node:** The topmost node, representing the best feature to split the data.
-* **Internal Nodes:** Nodes between the root and leaves, representing intermediate decisions.
+            if target_column and feature_columns:
+                X = df[feature_columns]
+                y = df[target_column]
+                data_loaded = True
+            else:
+                st.warning("Please select both target and feature columns.")
+                data_loaded = False
 
-**Splitting Criteria:**
+        except Exception as e:
+            st.error(f"Error loading CSV file: {e}")
+            data_loaded = False
+    else:
+        st.info("Please upload a CSV file to proceed.")
+        data_loaded = False
 
-Decision Trees use splitting criteria to determine the best feature to split the data at each node. Common criteria include:
+elif data_source == "Use Iris Dataset":
+    from sklearn.datasets import load_iris
+    iris = load_iris(as_frame=True)
+    df = iris.frame
+    X = iris.data
+    y = iris.target
+    target_column = iris.target_names.tolist()
+    feature_columns = iris.feature_names
+    st.subheader("Iris Dataset Loaded:")
+    st.dataframe(df.head())
+    data_loaded = True
 
-* **Gini Impurity:** Measures the impurity of a set of labels. A Gini score of 0 indicates perfect purity (all labels are the same). The formula for Gini Impurity is:
+if data_loaded:
+    st.sidebar.header("Model Parameters")
+    criterion = st.sidebar.selectbox("Select Criterion:", ["gini", "entropy"])
+    max_depth = st.sidebar.slider("Max Depth:", min_value=1, max_value=20, value=None)
+    min_samples_split = st.sidebar.slider("Min Samples Split:", min_value=2, max_value=20, value=2)
+    min_samples_leaf = st.sidebar.slider("Min Samples Leaf:", min_value=1, max_value=20, value=1)
 
-    $$Gini = 1 - \sum_{i=1}^{n} P_i^2$$
+    # Train the Decision Tree model
+    clf = DecisionTreeClassifier(criterion=criterion, max_depth=max_depth, min_samples_split=min_samples_split, min_samples_leaf=min_samples_leaf)
+    clf.fit(X, y)
 
-    Where $P_i$ is the probability of an object being classified to a particular class.
+    st.subheader("Trained Decision Tree:")
+    fig, ax = plt.subplots(figsize=(15, 10))
+    plot_tree(clf, filled=True, feature_names=feature_columns, class_names=[str(c) for c in np.unique(y)], ax=ax)
+    st.pyplot(fig)
 
-* **Entropy:** Measures the disorder or randomness in a set of labels. Entropy of 0 indicates a perfectly homogeneous set. The formula for Entropy is:
+    # Feature Importance
+    st.subheader("Feature Importance:")
+    importance = clf.feature_importances_
+    feature_importance = pd.DataFrame({'Feature': feature_columns, 'Importance': importance})
+    feature_importance = feature_importance.sort_values(by='Importance', ascending=False)
+    st.dataframe(feature_importance)
 
-    $$Entropy = - \sum_{i=1}^{n} P_i \log_2(P_i)$$
+    # Prediction Section
+    st.subheader("Make Predictions:")
+    st.write("Enter the feature values to predict the target.")
 
-    Where $P_i$ is the probability of an object being classified to a particular class.
+    prediction_inputs = {}
+    for feature in feature_columns:
+        # Try to infer input type based on the data
+        if pd.api.types.is_numeric_dtype(X[feature]):
+            min_val = X[feature].min()
+            max_val = X[feature].max()
+            prediction_inputs[feature] = st.number_input(f"{feature} (min: {min_val:.2f}, max: {max_val:.2f})", min_value=min_val, max_value=max_val)
+        else:
+            unique_vals = X[feature].unique().tolist()
+            prediction_inputs[feature] = st.selectbox(f"{feature}", unique_vals)
 
-* **Information Gain:** Measures the reduction in entropy after splitting the data. The feature with the highest information gain is chosen for splitting.
+    if st.button("Predict"):
+        input_data = pd.DataFrame([prediction_inputs])
+        # Ensure the order of columns matches the training data
+        input_data = input_data[feature_columns]
+        prediction = clf.predict(input_data)
 
-**How Decision Trees Work:**
+        st.write("Prediction:")
+        if data_source == "Use Iris Dataset":
+            st.write(f"The predicted class is: {iris.target_names[prediction[0]]}")
+        else:
+            st.write(f"The predicted class is: {prediction[0]}")
 
-""")
-
-# Add GIF after "How Decision Trees Work:"
-st.image("ML_DecTree.gif")
-
-st.markdown("""
-1.  **Start at the root node:** Select the best feature to split the data based on the splitting criteria.
-2.  **Create branches:** Divide the data into subsets based on the feature values.
-3.  **Recursively repeat:** Apply the same process to each subset until a stopping condition is met (e.g., maximum depth, minimum samples per leaf).
-4.  **Assign labels to leaves:** Assign the majority class or average value to each leaf node.
-
-**Advantages:**
-
-* Easy to understand and interpret.
-* Can handle both categorical and numerical data.
-* Requires minimal data preprocessing.
-
-**Disadvantages:**
-
-* Prone to overfitting, especially with deep trees.
-* Can be sensitive to small variations in the data.
-* Can create complex trees that are difficult to interpret.
-
-""")
-
-# Objective and Steps
-st.header("Objective")
-st.write("Classify flowers based on sepal and petal dimensions using a Decision Tree.")
-
-st.header("Steps")
-st.markdown("""
-1.  **Load the Iris dataset:** Extract data on sepal and petal dimensions.
-2.  **Initialize the model:** Create a `DecisionTreeClassifier` instance.
-3.  **Train the model:** Fit the model to the dataset.
-4.  **Visualize the tree:** Display the trained decision tree using `plot_tree`.
-5.  **Make predictions:** Allow the user to input flower dimensions and predict the flower class.
-""")
-
-# Dataset Information
-st.header("The Dataset: Iris Dataset")
-st.markdown("""
-* 150 data points
-* 3 classes (Setosa, Versicolor, Virginica) with 50 data points each
-* No explicit test data (for simplicity, we'll train on the entire dataset)
-* Columns: Sepal Length, Sepal Width, Petal Length, Petal Width, Class (0-1-2)
-""")
-
-# Code to be executed and displayed
-code = """
-import numpy as np
-import matplotlib.pyplot as plt
-from sklearn.tree import plot_tree
-from sklearn.datasets import load_iris
-from sklearn.tree import DecisionTreeClassifier
-
-# Load the Iris dataset
-iris = load_iris()
-x, y = iris.data, iris.target
-
-# Create and train the Decision Tree classifier
-clf = DecisionTreeClassifier(criterion="gini")
-clf.fit(x, y)
-
-# Visualization
-plt.figure(figsize=(15, 12))
-plot_tree(clf, filled=True,
-          feature_names=iris.feature_names,
-          class_names=iris.target_names)
-"""
-
-st.code(code, language="python")
-
-# Execute the code and capture the plot
-try:
-    with contextlib.redirect_stdout(io.StringIO()) as code_output:
-        iris = load_iris()
-        x, y = iris.data, iris.target
-        clf = DecisionTreeClassifier(criterion="gini")
-        clf.fit(x, y)
-        fig, ax = plt.subplots(figsize=(15, 12)) #Create a figure and axes object.
-        plot_tree(clf, filled=True, feature_names=iris.feature_names, class_names=iris.target_names, ax = ax) #plot tree into the axes object.
-    st.pyplot(fig)  # Display the plot
-    if code_output.getvalue():
-        st.text("Code Output:")
-        st.text(code_output.getvalue())
-except Exception as e:
-    st.error(f"An error occurred: {e}")
-
-# Prediction Section
-st.header("Predict Flower Class")
-st.write("Enter the sepal and petal dimensions to predict the flower class.")
-
-sepal_length = st.number_input("Sepal Length (cm)", min_value=4.0, max_value=8.0, value=5.5)
-sepal_width = st.number_input("Sepal Width (cm)", min_value=2.0, max_value=4.5, value=3.0)
-petal_length = st.number_input("Petal Length (cm)", min_value=1.0, max_value=7.0, value=4.0)
-petal_width = st.number_input("Petal Width (cm)", min_value=0.1, max_value=2.5, value=1.3)
-
-if st.button("Predict"):
-    prediction = clf.predict([[sepal_length, sepal_width, petal_length, petal_width]])
-    class_names = iris.target_names
-    st.write(f"The predicted flower class is: {class_names[prediction[0]]}")
+else:
+    st.info("Please select a data source to start.")
